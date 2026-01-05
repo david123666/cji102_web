@@ -143,7 +143,7 @@ $n8n_data = [
 ];
 
 // 傳送到 n8n Webhook
-$webhook_url = 'https://n8n-wmssw56fua-de.a.run.app/webhook/64288803-6fe5-4454-a3bf-48c23c38d1e5';
+$webhook_url = 'https://n8n-wmssw56fua-de.a.run.app/webhook-test/skin-analysis';
 $ch = curl_init($webhook_url);
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($n8n_data));
