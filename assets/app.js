@@ -320,19 +320,3 @@ export function renderMetricBars(container, metrics, config = {}) {
     container.appendChild(row);
   });
 }
-// 初始化 LIFF
-await liff.init({ liffId: "2008825433-EiKVRQPf" });
-
-if (!liff.isLoggedIn()) {
-    liff.login();
-} else {
-    const profile = await liff.getProfile();
-    const userId = profile.userId; // 取得 Line User ID
-
-    // 當使用者點擊「上傳」時
-    const formData = new FormData();
-    formData.append('photo', fileElement.files[0]);
-    formData.append('line_user_id', userId); // 👈 關鍵：把 ID 傳給 PHP
-
-    fetch('api/analyze.php', { method: 'POST', body: formData });
-}
