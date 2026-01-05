@@ -1,0 +1,313 @@
+:root{
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  --glass-bg: rgba(255,255,255,.14);
+  --glass-border: rgba(255,255,255,.22);
+
+  --text-dark: rgba(22,22,26,.92);
+  --text: rgba(22,22,26,.92);
+  --muted: rgba(22,22,26,.62);
+
+  --shadow: rgba(0,0,0,.18);
+
+  --accent: #ff9db8;      /* 粉 */
+  --accent2: #f2d88c;     /* 香檳金 */
+
+  /* ✅ 新增：統一版面寬度與 header 高度 */
+  --page-max: 1040px;
+  --header-h: 76px; /* 基準高度（再加 safe-top） */
+}
+
+html,body{
+  margin:0;
+  min-height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--text);
+
+  /* ✅ 修正：多頁內容要能滾動 */
+  overflow-x:hidden;
+  overflow-y:auto;
+
+  background:
+    radial-gradient(1200px 900px at 20% 18%, rgba(255, 182, 193, 0.35), transparent 55%),
+    radial-gradient(900px 700px at 80% 28%, rgba(242, 216, 140, 0.30), transparent 55%),
+    radial-gradient(900px 900px at 50% 90%, rgba(255, 255, 255, 0.85), transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, #f5f6fb 100%);
+}
+
+/* 背景玻璃層 */
+.bg-glass{
+  position:fixed; inset:0; pointer-events:none;
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  z-index: 0;
+}
+.bg-glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: url("background.jpg") center / cover no-repeat;  /* 放置背景圖片 */
+  opacity: .25;              /* 背景圖透明度 */
+  filter: blur(0px);         /* 想柔一點可改 blur(2px) */
+}
+.bg-glass::after{
+  content:""; position:absolute; inset:-40px;
+  background-image: radial-gradient(rgba(0,0,0,.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity:.08;
+  transform: rotate(-6deg);
+}
+/* =========================
+   Apple Glass Background
+   ========================= */
+
+.bg-glass{
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 背景圖片層（清楚但降存在感） */
+.bg-glass::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("background.jpg") center / cover no-repeat;
+  /* filter: saturate(1.05) contrast(1.02); */
+  filter: blur(1px) saturate(1.05);
+  opacity: 0.45;
+}
+
+/* 玻璃霧化層（Apple 核心） */
+.bg-glass::after{
+  content: "";
+  position: absolute;
+  inset: -40px; /* 擴大避免邊緣破圖 */
+
+  /* Apple Glass 關鍵 */
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+
+  /* 微亮霧感 */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.35),
+      rgba(255,255,255,.15)
+    );
+
+  /* 細微顆粒，避免「塑膠感」 */
+  background-image:
+    radial-gradient(rgba(0,0,0,.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+
+  opacity: 1;
+}
+
+
+/* ✅ header 改成「固定但不撐爆」：限制寬度＋置中 */
+header{
+  position:fixed; top:0; left:50%;
+  transform: translateX(-50%);
+  width: min(var(--page-max), calc(100% - 32px));
+  padding: calc(14px + var(--safe-top)) 18px 12px 18px;
+  display:flex; justify-content:space-between; align-items:center;
+  z-index:10;
+  box-sizing: border-box;
+
+  /* ✅ 更像正式產品：header 也玻璃化 */
+  background: rgba(255,255,255,.35);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 60px rgba(0,0,0,.10);
+}
+
+.brand{display:flex; gap:10px; align-items:center;}
+.logo{
+  width:34px; height:34px; border-radius:12px;
+  background: linear-gradient(135deg, rgba(255,157,184,.95), rgba(242,216,140,.92));
+  box-shadow: 0 10px 30px var(--shadow);
+}
+
+.brand h1{
+  margin:0;
+  font-size:15px;
+  letter-spacing:1px;
+  font-weight:800;
+  background: linear-gradient(135deg, rgba(255,157,184,.95), rgba(242,216,140,.95));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.brand p{
+  margin:2px 0 0 0;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.4px;
+}
+
+/* ✅ stage 改成可滾動頁面容器：不再用 height:100% 置中鎖死 */
+.stage{
+  position: relative;
+  z-index: 1;
+
+  /* ✅ 關鍵：避開 fixed header */
+  padding:
+    calc(var(--header-h) + var(--safe-top) + 18px)
+    16px
+    calc(24px + var(--safe-bottom))
+    16px;
+
+  box-sizing:border-box;
+
+  /* ✅ 內容居中，但高度自適應 */
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+
+  min-height: 100vh;
+}
+
+/* ✅ 卡片一定要有 max-width，不然會被拉爆 */
+.card{
+  width: min(980px, 100%);
+  max-width: var(--page-max);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  overflow:hidden;
+}
+
+.card-head{
+  padding:16px 16px 12px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.title{
+  margin:0;
+  font-size:14px;
+  letter-spacing:1px;
+  font-weight:900;
+  color: var(--text-dark);
+}
+.sub{
+  margin:6px 0 0 0;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.4px;
+}
+.body{padding: 0 16px 16px 16px;}
+
+/* 按鈕 */
+.btn{
+  border:1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.60);
+  color: rgba(22,22,26,.88);
+  padding:10px 12px;
+  border-radius:14px;
+  font-size:13px;
+  letter-spacing:.4px;
+  cursor:pointer;
+  transition: transform .15s ease, filter .15s ease;
+  white-space: nowrap; /* ✅ 避免按鈕換行撐爆 header */
+}
+.btn:hover{filter:brightness(1.03);}
+.btn:active{transform:scale(.98);}
+
+.btn-primary{
+  background: linear-gradient(135deg, rgba(255,157,184,.95), rgba(242,216,140,.92));
+  border: 1px solid rgba(0,0,0,.08);
+  color: rgba(24, 11, 10, 0.92);
+  font-weight: 900;
+}
+
+.btn-lg{
+  padding: 14px 90px;
+  font-size: 24px;
+  border-radius: 200px;
+}
+
+/* 版面 */
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:stretch;}
+.kpi{
+  flex:1 1 220px;
+  padding:12px;
+  border-radius:16px;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+/* ✅ Canvas / 圖表區域：不跑版 */
+canvas{
+  display:block;
+  max-width:100%;
+}
+
+.big{
+  font-size:34px;
+  font-weight:950;
+  line-height:1;
+  background: linear-gradient(135deg, rgba(242,216,140,.95), rgba(255,157,184,.85));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.input{
+  width:100%;
+  box-sizing:border-box;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.62);
+  border:1px solid rgba(0,0,0,.10);
+  color: rgba(22,22,26,.90);
+  outline:none;
+}
+.input::placeholder{color: rgba(22,22,26,.42);}
+
+.toast{
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + var(--safe-bottom));
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.78);
+  border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.92);
+  font-size: 13px;
+  letter-spacing: .3px;
+  box-shadow: 0 16px 50px rgba(0,0,0,.35);
+  opacity: 0;
+  pointer-events:none;
+  transition: opacity .2s ease;
+  z-index: 60;
+  max-width: min(92vw, 540px);
+  text-align:center;
+}
+.toast.show{opacity:1;}
+
+/* ✅ 手機：header 變直向更穩 */
+@media (max-width: 720px){
+  header{
+    width: calc(100% - 24px);
+    padding: calc(12px + var(--safe-top)) 14px 10px 14px;
+    border-radius: 16px;
+  }
+  .stage{
+    padding-top: calc(var(--header-h) + var(--safe-top) + 12px);
+  }
+  .btn-lg{
+    padding: 14px 48px;
+    font-size: 20px;
+  }
+}

@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>結果</title>
+  <link rel="stylesheet" href="assets/app.css" />
+  <style>
+    /* ✅ 讓結果頁可以滾動（避免 app.css overflow:hidden 造成看不到下面） */
+    html, body { height: 100%; overflow: auto; }
+
+    /* 這頁專用微調（不破壞 app.css） */
+    .stage{ align-items:flex-start; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:12px;
+    }
+    @media (max-width: 900px){
+      .grid{grid-template-columns: 1fr;}
+    }
+
+    .panel{
+      padding:14px;
+      border-radius:16px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 18px 60px rgba(0,0,0,.10);
+      color: rgba(24,11,10,.92);
+    }
+
+    .panel .h{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .panel .h strong{
+      font-size:13px;
+      letter-spacing:.8px;
+    }
+
+    .chip{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.7);
+      white-space:nowrap;
+    }
+
+    .score{
+      display:flex;
+      align-items:flex-end;
+      gap:12px;
+    }
+    .score .num{
+      font-size:46px;
+      font-weight:900;
+      letter-spacing:1px;
+      line-height:1;
+      background: linear-gradient(135deg, rgba(255,157,184,.95), rgba(216,189,91,.95));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    .score .meta{
+      font-size:12px;
+      color: rgba(24,11,10,.70);
+      line-height:1.5;
+    }
+
+    .canvasWrap{
+      border-radius:16px;
+      overflow:hidden;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.55);
+    }
+    canvas{display:block; width:100%; height:auto;}
+
+    .list{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+    .item{
+      padding:10px 12px;
+      border-radius:14px;
+      background: rgba(255,255,255,.70);
+      border: 1px solid rgba(0,0,0,.08);
+      color: rgba(24,11,10,.90);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.85);
+      margin-right:8px;
+      white-space:nowrap;
+    }
+    .mutedText{color: rgba(24,11,10,.68); font-size:12px; line-height:1.5;}
+
+    /* ✅ Bar Chart 行 */
+    .barRow{
+      display:flex; align-items:center; gap:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .barLabel{ width:110px; font-size:12px; color: rgba(24,11,10,.74); }
+    .barTrack{
+      flex:1;
+      height:12px;
+      border-radius:999px;
+      background: rgba(0,0,0,.10);
+      overflow:hidden;
+    }
+    .barFill{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background: linear-gradient(135deg, rgba(242,216,140,.95), rgba(255,157,184,.85));
+    }
+    .barVal{ width:42px; text-align:right; font-weight:900; font-size:12px; }
+
+    /* 商品推薦 */
+    .productTitle{font-weight:900; margin-bottom:4px;}
+    .productMeta{display:flex; gap:8px; align-items:center; margin-top:6px; font-size:12px; color: rgba(24,11,10,.68);}
+    .productCta{
+      margin-left:auto;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.12);
+      background: rgba(255,255,255,.75);
+      font-size:12px;
+      cursor:pointer;
+      text-decoration:none;
+      color: rgba(24,11,10,.86);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-glass"></div>
+
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>結果</h1>
+        <p>五角分析 × 氣色 × 膚況 × 建議</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn" onclick="location.href='analyze.html'">再分析</button>
+      <button class="btn" onclick="location.href='index.html'">回首頁</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="title">AI 分析報告</div>
+          <div class="sub">資料來源：localStorage（沒資料會自動用測試數值）</div>
+        </div>
+        <span class="tag" id="scoreTag">Score --</span>
+      </div>
+
+      <div class="body">
+        <div class="grid">
+          <!-- 左：總分 + 雷達 -->
+          <div class="panel">
+            <div class="h">
+              <strong>總覽（Overall）</strong>
+              <span class="chip" id="qualityChip">--</span>
+            </div>
+
+            <div class="score">
+              <div class="num" id="overallNum">--</div>
+              <div class="meta" id="overallMeta">
+                會根據五角指標 + 氣色 + 膚況推估<br />
+                建議拍攝：自然光、避免背光、距離 30–40cm
+              </div>
+            </div>
+
+            <div style="height:12px;"></div>
+
+            <div class="h">
+              <strong>五角雷達（五項核心）</strong>
+              <span class="chip">0–100</span>
+            </div>
+            <div class="canvasWrap">
+              <canvas id="radar" width="520" height="360"></canvas>
+            </div>
+
+            <div class="mutedText" style="margin-top:10px;">
+              五角建議：五個指標越平均越好；單項過低代表那項需要優先改善。
+            </div>
+          </div>
+
+          <!-- 右：氣色/膚況摘要 -->
+          <div class="panel">
+            <div class="h">
+              <strong>專業摘要</strong>
+              <span class="chip" id="timestampChip">--</span>
+            </div>
+
+            <div class="list" id="summaryCards"></div>
+
+            <div style="height:10px;"></div>
+            <div class="h">
+              <strong>風險提醒</strong>
+              <span class="chip">建議參考</span>
+            </div>
+            <div class="list" id="riskList"></div>
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <!-- 條狀圖 -->
+        <div class="kpi" style="margin-top:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="sub">指標明細（Bar Chart）</div>
+            <span class="tag">越高越好</span>
+          </div>
+          <div id="bars" style="margin-top:10px; display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <!-- 建議 -->
+        <div class="panel">
+          <div class="h">
+            <strong>改善建議（Tips）</strong>
+            <span class="chip" id="tipsCount">0</span>
+          </div>
+          <div class="list" id="tipsList"></div>
+        </div>
+
+        <div style="height:12px;"></div>
+
+        <!-- 商品推薦 -->
+        <div class="panel">
+          <div class="h">
+            <strong>商品推薦</strong>
+            <span class="chip" id="productCount">0</span>
+          </div>
+          <div class="list" id="productList"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // -----------------------------
+    // ✅ 0) 小工具：Toast
+    // -----------------------------
+    const toastEl = document.getElementById("toast");
+    function toast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      setTimeout(()=> toastEl.classList.remove("show"), 1800);
+    }
+
+    // -----------------------------
+    // ✅ 1) 讀 localStorage（找不到就用 demo）
+    // -----------------------------
+    function loadResult(){
+      const keys = ["result", "ai_result", "analysis_result", "payload"];
+      for(const k of keys){
+        const raw = localStorage.getItem(k);
+        if(!raw) continue;
+        try { return JSON.parse(raw); } catch(e){}
+      }
+      return null;
+    }
+
+    function getDemoPayload(){
+      return {
+        timestamp: new Date().toISOString(),
+        overall: 78,
+        metrics: {
+          glow: 72,
+          complexion: 80,
+          blemish: 64,
+          oilBalance: 70,
+          evenness: 75
+        },
+        tips: [
+          "建議在自然光下拍攝，避免背光造成氣色偏低。",
+          "先把保養做穩：保濕＋防曬，連續 7 天再看趨勢。",
+          "若偏油：減少厚重乳霜；若偏乾：增加保濕層並降低去角質頻率。",
+          "固定同一時間、同一光線拍 3 天，結果更可信。"
+        ],
+        products: []
+      };
+    }
+
+    const url = new URL(location.href);
+    const forceDemo = url.searchParams.get("demo") === "1";
+
+    let payload = forceDemo ? null : loadResult();
+    if(!payload){
+      payload = getDemoPayload();
+      toast("已載入測試數值（demo）");
+    }
+
+    // -----------------------------
+    // ✅ 2) 正規化 metrics（支援中文/英文欄位 + 防 NaN）
+    // -----------------------------
+    const m = payload.metrics || {};
+    const toNum = (v, fallback = 0) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    const metrics = {
+      glow:       toNum(m.glow ?? m.光澤, 72),
+      complexion: toNum(m.complexion ?? m.氣色, 78),
+      blemish:    toNum(m.blemish ?? m.瑕疵, 64),
+      oilBalance: toNum(m.oilBalance ?? m.油水平衡, 70),
+      evenness:   toNum(m.evenness ?? m.均勻度, 75),
+    };
+
+    const overall = toNum(payload.overall, Math.round(
+      (metrics.glow + metrics.complexion + metrics.blemish + metrics.oilBalance + metrics.evenness) / 5
+    ));
+
+    const quality =
+      overall >= 85 ? "狀態極佳" :
+      overall >= 75 ? "整體良好" :
+      overall >= 60 ? "可再提升" : "需要加強";
+
+    document.getElementById("overallNum").textContent = overall;
+    document.getElementById("scoreTag").textContent = `Score ${overall}`;
+    document.getElementById("qualityChip").textContent = quality;
+
+    const ts = payload.timestamp ? new Date(payload.timestamp) : new Date();
+    document.getElementById("timestampChip").textContent = ts.toLocaleString();
+
+    // -----------------------------
+    // ✅ 3) Radar Chart（原生 Canvas）
+    // -----------------------------
+    function drawRadar(canvas, values, labels){
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+
+      const cx = W/2, cy = H/2;
+      const radius = Math.min(W, H) * 0.34;
+      const N = labels.length;
+
+      // 背景圈
+      ctx.lineWidth = 1;
+      for(let k=1;k<=4;k++){
+        const r = radius * (k/4);
+        ctx.beginPath();
+        for(let i=0;i<N;i++){
+          const a = (-Math.PI/2) + (i * 2*Math.PI / N);
+          const x = cx + r * Math.cos(a);
+          const y = cy + r * Math.sin(a);
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = "rgba(0,0,0,.10)";
+        ctx.stroke();
+      }
+
+      // 軸線 + 標籤
+      for(let i=0;i<N;i++){
+        const a = (-Math.PI/2) + (i * 2*Math.PI / N);
+        const x = cx + radius * Math.cos(a);
+        const y = cy + radius * Math.sin(a);
+
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.lineTo(x,y);
+        ctx.strokeStyle = "rgba(0,0,0,.12)";
+        ctx.stroke();
+
+        const lx = cx + (radius + 18) * Math.cos(a);
+        const ly = cy + (radius + 18) * Math.sin(a);
+        ctx.fillStyle = "rgba(24,11,10,.72)";
+        ctx.font = "12px -apple-system, Segoe UI, sans-serif";
+        ctx.textAlign = (Math.cos(a) > 0.2) ? "left" : (Math.cos(a) < -0.2 ? "right" : "center");
+        ctx.textBaseline = (Math.sin(a) > 0.2) ? "top" : (Math.sin(a) < -0.2 ? "bottom" : "middle");
+        ctx.fillText(labels[i], lx, ly);
+      }
+
+      // 數值區塊
+      const vals = values.map(v=> Math.max(0, Math.min(100, Number(v))) / 100);
+      ctx.beginPath();
+      for(let i=0;i<N;i++){
+        const a = (-Math.PI/2) + (i * 2*Math.PI / N);
+        const r = radius * vals[i];
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+
+      ctx.fillStyle = "rgba(255,157,184,.22)";
+      ctx.strokeStyle = "rgba(216,189,91,.85)";
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+
+      // 點
+      for(let i=0;i<N;i++){
+        const a = (-Math.PI/2) + (i * 2*Math.PI / N);
+        const r = radius * vals[i];
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        ctx.beginPath();
+        ctx.arc(x,y,4,0,Math.PI*2);
+        ctx.fillStyle = "rgba(216,189,91,.95)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.9)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    const radar = document.getElementById("radar");
+    drawRadar(
+      radar,
+      [metrics.glow, metrics.complexion, metrics.blemish, metrics.oilBalance, metrics.evenness],
+      ["光澤","氣色","瑕疵","油水平衡","均勻度"]
+    );
+
+    // -----------------------------
+    // ✅ 4) Bar Chart（DOM 版，穩定不跑版）
+    // -----------------------------
+    const bars = document.getElementById("bars");
+    const barDefs = [
+      ["光澤", metrics.glow],
+      ["氣色", metrics.complexion],
+      ["瑕疵", metrics.blemish],
+      ["油水平衡", metrics.oilBalance],
+      ["均勻度", metrics.evenness],
+    ];
+
+    bars.innerHTML = "";
+    for(const [label, val] of barDefs){
+      const v = Math.max(0, Math.min(100, Number(val)));
+      const row = document.createElement("div");
+      row.className = "barRow";
+      row.innerHTML = `
+        <div class="barLabel">${label}</div>
+        <div class="barTrack"><div class="barFill" style="width:${v}%"></div></div>
+        <div class="barVal">${v}</div>
+      `;
+      bars.appendChild(row);
+    }
+
+    // -----------------------------
+    // ✅ 5) 專業摘要卡
+    // -----------------------------
+    const summaryCards = document.getElementById("summaryCards");
+
+    function addCard(title, val, hint){
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+          <div><span class="badge">${title}</span></div>
+          <div style="font-weight:900;">${val}</div>
+        </div>
+        <div class="mutedText" style="margin-top:6px;">${hint}</div>
+      `;
+      summaryCards.appendChild(div);
+    }
+
+    summaryCards.innerHTML = "";
+    addCard("氣色", metrics.complexion, "偏低常見原因：睡眠不足、背光、妝容/濾鏡干擾。");
+    addCard("膚況", Math.round((metrics.blemish + metrics.evenness)/2), "瑕疵＋均勻度一起看，代表整體膚況穩定性。");
+    addCard("光澤", metrics.glow, "光澤與光線很相關：自然光、避免直射反光更準。");
+    addCard("油水平衡", metrics.oilBalance, "太油或太乾都會影響均勻度與瑕疵，建議觀察 T 字/兩頰差異。");
+
+    // -----------------------------
+    // ✅ 6) 風險提醒
+    // -----------------------------
+    const riskList = document.getElementById("riskList");
+    const risks = [];
+    if(metrics.complexion < 60) risks.push("氣色偏低：先確認光線 + 睡眠狀態（此為參考，不代表健康診斷）。");
+    if(metrics.blemish < 55) risks.push("瑕疵指標偏低：建議先從清潔、保濕與防曬一致性開始。");
+    if(metrics.oilBalance < 55) risks.push("油水平衡偏低：可能過乾/過油，建議簡化保養並觀察 3–7 天。");
+    if(risks.length === 0) risks.push("沒有明顯風險指標，維持目前作息與防曬習慣即可。");
+
+    riskList.innerHTML = "";
+    risks.forEach(t=>{
+      const div = document.createElement("div");
+      div.className = "item";
+      div.textContent = t;
+      riskList.appendChild(div);
+    });
+
+    // -----------------------------
+    // ✅ 7) Tips（永遠有內容 + 會依指標連動）
+    // -----------------------------
+    const tipsList = document.getElementById("tipsList");
+
+    function uniqPush(arr, txt){
+      if(!txt) return;
+      if(!arr.includes(txt)) arr.push(txt);
+    }
+
+    const tipsBase = Array.isArray(payload.tips) && payload.tips.length
+      ? payload.tips.filter(Boolean)
+      : [];
+
+    const tips = tipsBase.slice();
+
+    if(metrics.complexion < 60){
+      uniqPush(tips, "氣色偏低：自然光側光重拍，並把睡眠拉回（提早 30–60 分鐘上床最有效）。");
+      uniqPush(tips, "早餐補水＋蛋白質（豆漿/蛋/優格）能讓氣色更穩。");
+    }
+    if(metrics.blemish < 55){
+      uniqPush(tips, "瑕疵偏低：清潔改溫和，洗面 40–60 秒，避免用力摩擦。");
+      uniqPush(tips, "粉刺/痘痘多：先穩定保濕＋防曬，再逐步加入功能型產品。");
+    }
+    if(metrics.oilBalance < 55){
+      uniqPush(tips, "油水平衡偏低：先簡化保養 3–7 天觀察（越簡單越穩）。");
+      uniqPush(tips, "白天用吸油面紙輕壓即可，別過度控油。");
+    }
+    if(metrics.glow < 60){
+      uniqPush(tips, "光澤偏低：避免背光與頂光，用窗邊自然側光，距離 30–40cm。");
+      uniqPush(tips, "保養先把保濕層做好（化妝水/精華）再加鎖水乳。");
+    }
+    if(metrics.evenness < 60){
+      uniqPush(tips, "均勻度偏低：防曬要穩定，並減少摩擦（洗臉/擦拭要溫柔）。");
+      uniqPush(tips, "固定同一時間連拍 3 天再看趨勢，單次波動很常見。");
+    }
+
+    const tipFallback = [
+      "固定同一時間、同一光線拍 3 天，趨勢比單次更可信。",
+      "保養順序先穩：清潔 → 保濕 → 防曬；功能型產品等穩定後再加。",
+      "拍攝時避免濾鏡、美肌、誇張補光，否則指標會被干擾。",
+      "室內偏黃光會拉低氣色與均勻度，盡量靠窗自然光。",
+      "今天狀態差別急著下結論：用 7 天平均值更準。"
+    ];
+    for(const t of tipFallback){
+      if(tips.length >= 5) break;
+      uniqPush(tips, t);
+    }
+
+    document.getElementById("tipsCount").textContent = `${tips.length} 條`;
+
+    tipsList.innerHTML = "";
+    tips.forEach(t=>{
+      const div = document.createElement("div");
+      div.className = "item";
+      div.textContent = t;
+      tipsList.appendChild(div);
+    });
+
+    // -----------------------------
+    // ✅ 8) 商品推薦（永遠有內容 + 會依指標連動）
+    // -----------------------------
+    const productList = document.getElementById("productList");
+
+    function pickProducts(metrics){
+      const list = [];
+
+      if(metrics.oilBalance < 60){
+        list.push({
+          name: "清爽保濕凝露（油水平衡）",
+          desc: "適合混合偏油/出油不穩。先補水再談控油，皮脂更穩。",
+          tag: "油水平衡",
+          url: "#"
+        });
+      }else{
+        list.push({
+          name: "高保濕乳液/乳霜（鎖水）",
+          desc: "適合偏乾或空調環境。保濕做穩，均勻度與光澤通常一起上升。",
+          tag: "保濕",
+          url: "#"
+        });
+      }
+
+      if(metrics.blemish < 60){
+        list.push({
+          name: "溫和型洗面乳（減少刺激）",
+          desc: "瑕疵偏低時先穩定膚況，避免過度清潔。",
+          tag: "瑕疵改善",
+          url: "#"
+        });
+      }
+
+      if(metrics.evenness < 65){
+        list.push({
+          name: "防曬（SPF50 / PA++++）",
+          desc: "均勻度要穩，防曬是最有效投資。",
+          tag: "均勻度",
+          url: "#"
+        });
+      }
+
+      if(metrics.glow < 65){
+        list.push({
+          name: "保濕精華（提亮/光澤）",
+          desc: "先把保濕層補足，光澤更容易回來。",
+          tag: "光澤",
+          url: "#"
+        });
+      }
+
+      while(list.length < 3){
+        list.push({
+          name: "溫和化妝水（打底補水）",
+          desc: "補水是底盤：氣色、光澤、均勻度都會更穩。",
+          tag: "打底",
+          url: "#"
+        });
+      }
+
+      return list.slice(0,5);
+    }
+
+    const products = (Array.isArray(payload.products) && payload.products.length)
+      ? payload.products
+      : pickProducts(metrics);
+
+    document.getElementById("productCount").textContent = `${products.length} 項`;
+
+    productList.innerHTML = "";
+    products.forEach((p) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="productTitle">${p.name || "推薦項目"}</div>
+        <div class="mutedText">${p.desc || "建議方向：依你的指標弱項優先補強。"}</div>
+        <div class="productMeta">
+          <span class="badge">${p.tag || "建議"}</span>
+          <a class="productCta" href="${p.url || "#"}" target="_blank" rel="noopener">查看</a>
+        </div>
+      `;
+      productList.appendChild(div);
+    });
+  </script>
+</body>
+</html>
