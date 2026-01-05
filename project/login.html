@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>登入</title>
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+  <div class="bg-glass"></div>
+
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>登入</h1>
+        <p>正式上線會接後端驗證</p>
+      </div>
+    </div>
+    <button class="btn" onclick="location.href='index.html'">回首頁</button>
+  </header>
+
+  <div class="stage">
+    <div class="card" style="max-width:520px;">
+      <div class="card-head">
+        <div>
+          <div class="title">帳號登入</div>
+          <div class="sub">開發中：沒後端也能用 mock 登入</div>
+        </div>
+      </div>
+
+      <div class="body">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <input class="input" id="u" placeholder="帳號" autocomplete="username" />
+          <input class="input" id="p" placeholder="密碼" type="password" autocomplete="current-password" />
+          <button class="btn btn-primary" id="loginBtn">登入</button>
+          <button class="btn" id="logoutBtn">登出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { doLogin, logout, toast, isLoggedIn } from "./assets/app.js";
+
+    const u = document.getElementById("u");
+    const p = document.getElementById("p");
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const r = await doLogin(u.value, p.value);
+      if(!r.ok) return toast(r.message || "登入失敗");
+      toast(r.mock ? "Mock 登入成功（目前無後端）" : "登入成功");
+      setTimeout(()=> location.href="index.html", 450);
+    };
+
+    document.getElementById("logoutBtn").onclick = () => logout();
+
+    if(isLoggedIn()) toast("你目前已登入");
+  </script>
+</body>
+</html>
