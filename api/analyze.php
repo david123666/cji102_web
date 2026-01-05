@@ -126,8 +126,31 @@ $products = [
     'url'  => '#',
   ],
 ];
+// ... 原本的存檔邏輯 ...
 
-// 6) 回傳
+// ✅ 取得 Cloud Run 的對外網址
+$protocol = 'https'; // Cloud Run 預設強制 HTTPS
+$host = $_SERVER['HTTP_HOST'];
+$fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
+
+// ✅ 準備傳給 n8n
+$n8n_data = [
+    'ok' => true,
+    'photo_url' => $fullPhotoUrl,
+    'metrics' => $metrics,
+    'overall' => $overall,
+    'tag' => $tag
+];
+
+// 傳送到 n8n Webhook
+$webhook_url = 'https://n8n-wmssw56fua-de.a.run.app/webhook/64288803-6fe5-4454-a3bf-48c23c38d1e5';
+$ch = curl_init($webhook_url);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($n8n_data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_exec($ch);
+curl_close($ch);// 6) 回傳
 json_out([
   'ok'          => true,
   'payload_id'  => $payloadId,
