@@ -136,15 +136,14 @@ $fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
 // ... 之前的存檔與評分邏輯 ...
 // $lineUserId = $_POST['line_user_id'] ?? '';
 
-// 發送到 n8n
-json_out_to_n8n([
-  'ok'           => true,
-  'line_user_id' => $lineUserId, // 👈 傳給 n8n
-  'photo_url'    => $fullPhotoUrl,
-  'metrics'      => $metrics,
-  'overall'      => $overall,
-  'tag'          => $tag
-]);
+// ✅ 準備傳給 n8n
+$n8n_data = [
+    'ok' => true,
+    'photo_url' => $fullPhotoUrl,
+    'metrics' => $metrics,
+    'overall' => $overall,
+    'tag' => $tag
+];
 
 // 傳送到 n8n Webhook
 $webhook_url = 'https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis';
