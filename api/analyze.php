@@ -134,7 +134,7 @@ $host = $_SERVER['HTTP_HOST'];
 $fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
 
 // ... 之前的存檔與評分邏輯 ...
-$lineUserId = $_POST['line_user_id'] ?? '';
+// $lineUserId = $_POST['line_user_id'] ?? '';
 
 // 發送到 n8n
 json_out_to_n8n([
