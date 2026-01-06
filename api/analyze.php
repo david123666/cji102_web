@@ -128,23 +128,41 @@ $products = [
 ];
 // ... 原本的存檔邏輯 ...
 
-// ✅ 取得 Cloud Run 的對外網址
-$protocol = 'https'; // Cloud Run 預設強制 HTTPS
+// 1. 取得 ngrok 的對外網址
+// ngrok 會自動處理 HTTPS，但在本機端 PHP 有時會誤認成 http
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+
+// 在 ngrok 環境下，HTTP_HOST 就是你的 ngrok 網址 (例如: xxxx.ngrok-free.app)
 $host = $_SERVER['HTTP_HOST'];
+
+// 拼湊完整的圖片網址，確保 n8n 可以連回來下載
 $fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
 
-// ... 之前的存檔與評分邏輯 ...
+// 2. 取得 LIFF 傳過來的 line_user_id
 $lineUserId = $_POST['line_user_id'] ?? '';
 
-// 發送到 n8n
-json_out_to_n8n([
-  'ok'           => true,
-  'line_user_id' => $lineUserId, // 👈 傳給 n8n
-  'photo_url'    => $fullPhotoUrl,
-  'metrics'      => $metrics,
-  'overall'      => $overall,
-  'tag'          => $tag
-]);
+// 3. 準備發送到 n8n 的資料
+$dataToN8n = [
+    'ok'           => true,
+    'line_user_id' => $lineUserId,
+    'photo_url'    => $fullPhotoUrl, // 這個 URL 現在會是 ngrok 的網址
+    'overall'      => $overall,
+    'tag'          => $tag,
+    'metrics'      => $metrics
+];
+
+// 4. 發送到 n8n Webhook
+$n8n_webhook_url = 'https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis';
+$ch = curl_init($n8n_webhook_url);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dataToN8n));
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_exec($ch);
+curl_close($ch);
+
+
+
 
 // 傳送到 n8n Webhook
 $webhook_url = 'https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis';
