@@ -147,7 +147,7 @@ json_out_to_n8n([
 ]);
 
 // 傳送到 n8n Webhook
-$webhook_url = 'https://n8n-wmssw56fua-de.a.run.app/webhook/skin-analysis';
+$webhook_url = 'https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis';
 $ch = curl_init($webhook_url);
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($n8n_data));
