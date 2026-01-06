@@ -128,27 +128,18 @@ $products = [
 ];
 // ... 原本的存檔邏輯 ...
 
-// 1. 取得 ngrok 的對外網址
-// ngrok 會自動處理 HTTPS，但在本機端 PHP 有時會誤認成 http
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-
-// 在 ngrok 環境下，HTTP_HOST 就是你的 ngrok 網址 (例如: xxxx.ngrok-free.app)
+// ✅ 取得 Cloud Run 的對外網址
+$protocol = 'https'; // Cloud Run 預設強制 HTTPS
 $host = $_SERVER['HTTP_HOST'];
-
-// 拼湊完整的圖片網址，確保 n8n 可以連回來下載
 $fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
 
-// 2. 取得 LIFF 傳過來的 line_user_id
-$lineUserId = $_POST['line_user_id'] ?? '';
-
-// 3. 準備發送到 n8n 的資料
-$dataToN8n = [
-    'ok'           => true,
-    'line_user_id' => $lineUserId,
-    'photo_url'    => $fullPhotoUrl, // 這個 URL 現在會是 ngrok 的網址
-    'overall'      => $overall,
-    'tag'          => $tag,
-    'metrics'      => $metrics
+// ✅ 準備傳給 n8n
+$n8n_data = [
+    'ok' => true,
+    'photo_url' => $fullPhotoUrl,
+    'metrics' => $metrics,
+    'overall' => $overall,
+    'tag' => $tag
 ];
 
 // 4. 發送到 n8n Webhook
