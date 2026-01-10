@@ -142,19 +142,6 @@ $n8n_data = [
     'tag' => $tag
 ];
 
-// 4. 發送到 n8n Webhook
-$n8n_webhook_url = 'https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis';
-$ch = curl_init($n8n_webhook_url);
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dataToN8n));
-curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_exec($ch);
-curl_close($ch);
-
-
-
-
 // 傳送到 n8n Webhook
 $webhook_url = 'https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis';
 $ch = curl_init($webhook_url);
