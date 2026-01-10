@@ -3,17 +3,21 @@ const AUTH_KEY = "skinapp_auth";
 const RESULT_KEY = "skinapp_result";
 const DEV_FORCE_MOCK = false; // 需要時可改 true，強制用 mock
 
-// // 在 liff.init 之後
-// if (liff.isLoggedIn()) {
-//     const profile = await liff.getProfile();
-//     const userId = profile.userId; 
-    
-//     // 將 userId 放入 FormData 傳給你的 PHP
-//     const fd = new FormData();
-//     fd.append('photo', file);
-//     fd.append('line_user_id', userId); 
-//     // ... fetch ...
-// }
+liff.init({ liffId: "2008825433-EiKVRQPf" })
+  .then(() => {
+    if (!liff.isInClient()) {
+      // 如果不在 LINE App 內開啟，直接導向錯誤頁面或跳出提示
+      window.location.href = "https://your-error-page.com";
+      // 或者顯示提示文字
+      document.body.innerHTML = "<h1>請從 LINE 官方帳號內開啟此頁面</h1>";
+    } else {
+      // 正常執行 LIFF 功能
+      console.log("是在 LINE 內開啟的！");
+    }
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 
 export function toast(msg) {
   const el = document.getElementById("toast");
