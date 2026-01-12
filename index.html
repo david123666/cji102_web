@@ -69,6 +69,36 @@
       if(!r) return toast("目前沒有結果，先去分析一次");
       location.href = "result.html";
     };
+  //LINE認證  
+  var liffID = '2008825433-EiKVRQPf';
+
+  window.onload = function (e) {
+    // 初始化 LIFF
+      liff.init({ liffId: liffID }).then(function () {
+        
+        // 檢查是否已登入
+          if (!liff.isLoggedIn()) {
+            // 未登入，導向登入頁面
+              liff.login({
+                r  edirectUri: window.location.href // 登入後回到當前頁面
+              });
+          } else {
+            // 已登入，取得使用者 Profile
+              liff.getProfile().then(function (prof) {
+                  var userId = prof.userId;
+                  console.log("取得 User ID: " + userId);
+                
+                // 在此處處理您的邏輯，例如顯示在畫面上
+                  document.body.innerHTML = "<h1>您的 LINE ID: " + userId + "</h1>";
+              }).catch(function (error) {
+                  console.error("取得 Profile 失敗:", error);
+              });
+          }
+        
+      }).catch(function (err) {
+          console.error("LIFF 初始化失敗:", err);
+      });
+  };
   </script>
 </body>
 </html>
