@@ -18,7 +18,6 @@
       </div>
     </div>
     <!-- <button class="btn" onclick="location.href='login.html'">登入</button> -->
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   </header>
 
   <div class="stage">
@@ -55,8 +54,29 @@
   </div>
 
   <div class="toast" id="toast"></div>
-
-  <script type="module">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    async function main() {
+      await liff.init({ liffId: "2008825433-EiKVRQPf" });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      } else {
+        const profile = await liff.getProfile();
+        // 傳送給 n8n
+        await fetch("https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: profile.userId,
+            displayName: profile.displayName
+          })
+        });
+        alert("資料已傳送至 n8n！");
+        liff.closeWindow(); // 關閉 LIFF 視窗
+      }
+    }
+    main();
+</script>  <script type="module">
     import { requireLogin, loadResult, toast } from "./assets/app.js";
 
     document.getElementById("goAnalyze").onclick = async () => {
