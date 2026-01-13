@@ -1,7 +1,5 @@
-import liff from '@line/liff';
-
-async function main() {
-  await liff.init({ liffId: "2008825433-EiKVRQPf" }); // 這裡填入剛拿到的 ID
+// 填入你的 LIFF ID
+const liffID = '2008825433-EiKVRQPf';
 
 window.onload = function (e) {
     // 初始化 LIFF
