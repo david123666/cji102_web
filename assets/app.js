@@ -15,7 +15,8 @@ window.onload = function (e) {
             liff.getProfile().then(function (prof) {
                 var userId = prof.userId;
                 console.log("取得 User ID: " + userId);
-                
+                formData.append('line_user_id', userId); // 👈 關鍵：把 ID 傳給 PHP
+                fetch('api/analyze.php', { method: 'POST', body: formData });
                 // 在此處處理您的邏輯，例如顯示在畫面上
                 document.body.innerHTML = "<h1>您的 LINE ID: " + userId + "</h1>";
             }).catch(function (error) {
