@@ -136,6 +136,7 @@ $fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
 // ✅ 準備傳給 n8n
 $n8n_data = [
     'ok' => true,
+    'userId' => $userId,
     'photo_url' => $fullPhotoUrl,
     'metrics' => $metrics,
     'overall' => $overall,
