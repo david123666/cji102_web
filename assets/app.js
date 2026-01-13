@@ -1,37 +1,3 @@
-// 填入你的 LIFF ID
-var liffID = '2008825433-EiKVRQPf';
-
-window.onload = function (e) {
-    // 初始化 LIFF
-    liff.init({ liffId: liffID }).then(function () {
-        
-        // 檢查是否已登入
-        if (!liff.isLoggedIn()) {
-            // 未登入，導向登入頁面
-            liff.login({
-                redirectUri: window.location.href // 登入後回到當前頁面
-            });
-        } else {
-            // 已登入，取得使用者 Profile
-            liff.getProfile().then(function (prof) {
-                const uid = profile.userId;
-                const name = profile.displayName;
-                
-                console.log("取得 User ID: " + userId);
-                // formData.append('line_user_id', userId); // 👈 關鍵：把 ID 傳給 PHP
-                fetch('api/analyze.php', { method: 'POST', body: userId });
-                // 在此處處理您的邏輯，例如顯示在畫面上
-                document.body.innerHTML = "<h1>您的 LINE ID: " + userId + "</h1>";
-            }).catch(function (error) {
-                console.error("取得 Profile 失敗:", error);
-            });
-        }
-        
-    }).catch(function (err) {
-        console.error("LIFF 初始化失敗:", err);
-    });
-}}
-
 // assets/app.js
 const AUTH_KEY = "skinapp_auth";
 const RESULT_KEY = "skinapp_result";
@@ -353,4 +319,4 @@ export function renderMetricBars(container, metrics, config = {}) {
 
     container.appendChild(row);
   });
-}main();
+}}main();
