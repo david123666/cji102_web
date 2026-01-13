@@ -14,6 +14,7 @@ window.onload = function (e) {
             // 已登入，取得使用者 Profile
             liff.getProfile().then(function (prof) {
                 var userId = prof.userId;
+                const formData = new FormData();
                 console.log("取得 User ID: " + userId);
                 formData.append('line_user_id', userId); // 👈 關鍵：把 ID 傳給 PHP
                 fetch('api/analyze.php', { method: 'POST', body: formData });
