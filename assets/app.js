@@ -1,4 +1,7 @@
-const liffID = '2008825433-EiKVRQPf';
+import liff from '@line/liff';
+
+async function main() {
+  await liff.init({ liffId: "2008825433-EiKVRQPf" }); // 這裡填入剛拿到的 ID
 
 window.onload = function (e) {
     // 初始化 LIFF
@@ -29,7 +32,8 @@ window.onload = function (e) {
     }).catch(function (err) {
         console.error("LIFF 初始化失敗:", err);
     });
-};
+}}
+main();
 // assets/app.js
 const AUTH_KEY = "skinapp_auth";
 const RESULT_KEY = "skinapp_result";
