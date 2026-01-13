@@ -33,7 +33,7 @@ window.onload = function (e) {
         console.error("LIFF 初始化失敗:", err);
     });
 }}
-main();
+
 // assets/app.js
 const AUTH_KEY = "skinapp_auth";
 const RESULT_KEY = "skinapp_result";
@@ -355,4 +355,4 @@ export function renderMetricBars(container, metrics, config = {}) {
 
     container.appendChild(row);
   });
-}
+}main();
