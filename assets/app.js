@@ -1,5 +1,5 @@
 // 填入你的 LIFF ID
-const liffID = '2008825433-EiKVRQPf';
+var liffID = '2008825433-EiKVRQPf';
 
 window.onload = function (e) {
     // 初始化 LIFF
