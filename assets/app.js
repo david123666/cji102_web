@@ -1,4 +1,4 @@
-var liffID = '2008825433-EiKVRQPf';
+const liffID = '2008825433-EiKVRQPf';
 
 window.onload = function (e) {
     // 初始化 LIFF
@@ -13,7 +13,8 @@ window.onload = function (e) {
         } else {
             // 已登入，取得使用者 Profile
             liff.getProfile().then(function (prof) {
-                var userId = prof.userId;
+                const uid = profile.userId;
+                const name = profile.displayName;
                 
                 console.log("取得 User ID: " + userId);
                 // formData.append('line_user_id', userId); // 👈 關鍵：把 ID 傳給 PHP
