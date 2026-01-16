@@ -132,7 +132,7 @@ $products = [
 $protocol = 'https'; // Cloud Run 預設強制 HTTPS
 $host = $_SERVER['HTTP_HOST'];
 $fullPhotoUrl = $protocol . '://' . $host . '/' . $photoUrl;
-// $lineUserId = $_GET['userID'] ?? '';
+$lineUserId = $_POST['userID'] ?? '';
 
 // ✅ 準備傳給 n8n
 $n8n_data = [
