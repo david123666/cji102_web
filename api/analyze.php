@@ -1,4 +1,3 @@
-analyze.php
 <?php
 // api/analyze.php
 declare(strict_types=1);
