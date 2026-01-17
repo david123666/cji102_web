@@ -205,7 +205,7 @@ analyze.html
         const res = await fetch("api/analyze.php", { method:"POST", body: form });
 
         if(!res.ok){
-          toast("後端分析失敗（請看 api/analyze.php）");
+          toast("後端分析失敗(請看 api/analyze.php)");
           return;
         }
 
