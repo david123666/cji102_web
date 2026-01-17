@@ -201,7 +201,7 @@
         form.append("photo", blob, "capture.jpg");
         form.append("survey", surveyRaw);
 
-        const res = await fetch("api/analyze.php", { method:"POST", body: form });
+        const res = await fetch("./api/analyze.php", { method:"POST", body: form });
 
         if(!res.ok){
           toast("後端分析失敗(請看 api/analyze.php)");
