@@ -3,6 +3,13 @@
  * 專為 GitHub Pages 等靜態環境設計
  */
 
+/**
+ * analyze.js - 串接 n8n API 版
+ */
+
+// ------- 配置 n8n Webhook 網址 -------
+// 請將此處替換為你在 n8n 設定的 Production Webhook URL
+const N8N_WEBHOOK_URL = "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis1";
 // ------- 全域變數與初始化 -------
 const toastEl = document.getElementById("toast");
 const video = document.getElementById("video");
@@ -78,6 +85,33 @@ captureBtn.addEventListener("click", async () => {
         const photoBase64 = canvas.toDataURL("image/jpeg", 0.9);
         flashOnce();
 
+
+
+        
+        // 2. 準備傳送到 n8n 的資料
+        const formData = new FormData();
+        formData.append("image", blob, "capture.jpg");
+        // 如果有需要傳送其他欄位，例如 userID，可以在此加入
+        // formData.append("userId", "user_123");
+
+        // 3. 發送請求至 n8n
+        const response = await fetch(N8N_WEBHOOK_URL, {
+            method: "POST",
+            body: formData, // 使用 FormData 會自動處理 Content-Type: multipart/form-data
+        });
+
+        if (!response.ok) throw new Error("伺服器回應錯誤");
+
+        // 4. 接收 n8n 回傳的分析結果
+        // 假設 n8n 回傳的 JSON 結構與你原本的 payload 格式相同
+        const n8nResult = await response.json();
+
+
+        
+
+
+
+        
         // 2. 模擬 AI 運算時間 (1.5秒)
         await new Promise(resolve => setTimeout(resolve, 1500));
 
