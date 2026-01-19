@@ -90,7 +90,7 @@ captureBtn.addEventListener("click", async () => {
         
         // 2. 準備傳送到 n8n 的資料
         const formData = new FormData();
-        formData.append("image", blob, "capture.jpg");
+        formData.append("image", "capture.jpg");
         // 如果有需要傳送其他欄位，例如 userID，可以在此加入
         // formData.append("userId", "user_123");
 
