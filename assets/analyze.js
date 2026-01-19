@@ -81,9 +81,9 @@ captureBtn.addEventListener("click", async () => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0);
         
-        // 將照片轉為 Base64 字串 (品質 0.9)
-        const photoBase64 = canvas.toDataURL("image/jpeg", 0.9);
-        flashOnce();
+        // // 將照片轉為 Base64 字串 (品質 0.9)
+        // const photoBase64 = canvas.toDataURL("image/jpeg", 0.9);
+        // flashOnce();
 
 
         
@@ -136,7 +136,7 @@ captureBtn.addEventListener("click", async () => {
 
         const payload = {
             ok: true,
-            photo_url: photoBase64,
+            // photo_url: photoBase64,
             overall: overall,
             tag: tag,
             skinType: skinType,
