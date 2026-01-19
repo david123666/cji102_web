@@ -3,15 +3,10 @@
  * 專為 GitHub Pages 等靜態環境設計
  */
 await liff.init({ liffId: "2008825433-EiKVRQPf" });
-if (!liff.isLoggedIn()) {
-    liff.login();
-} else {
-    const profile = await liff.getProfile();
-    const idToken = liff.getIDToken(); // 取得 ID Token
+const profile = await liff.getProfile();
         // 傳送給 n8n
         // alert("資料已傳送至 n8n！");
         // liff.closeWindow(); // 關閉 LIFF 視窗
-}
 /**
  * analyze.js - 串接 n8n API 版
  */
