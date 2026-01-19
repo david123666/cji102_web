@@ -2,7 +2,16 @@
  * analyze.js - 前端模擬 AI 分析邏輯
  * 專為 GitHub Pages 等靜態環境設計
  */
-
+await liff.init({ liffId: "2008825433-EiKVRQPf" });
+if (!liff.isLoggedIn()) {
+    liff.login();
+} else {
+    const profile = await liff.getProfile();
+    const idToken = liff.getIDToken(); // 取得 ID Token
+        // 傳送給 n8n
+        // alert("資料已傳送至 n8n！");
+        // liff.closeWindow(); // 關閉 LIFF 視窗
+}
 /**
  * analyze.js - 串接 n8n API 版
  */
@@ -94,7 +103,7 @@ captureBtn.addEventListener("click", async () => {
         const formData = new FormData();
         formData.append("image", blob, "capture.jpg");
         // 如果有需要傳送其他欄位，例如 userID，可以在此加入
-        // formData.append("userId", "123");
+        formData.append("userId", profile.userId);
 
         // 3. 發送請求至 n8n
         const response = await fetch(N8N_WEBHOOK_URL, {
