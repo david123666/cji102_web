@@ -81,30 +81,30 @@ captureBtn.addEventListener("click", async () => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0);
         
-        // 將照片轉為 Base64 字串 (品質 0.9)
-        const photoBase64 = canvas.toDataURL("image/jpeg", 0.9);
+        // 將照片轉為 Blob (二進位制)，這對 API 傳輸效能較好且模擬真實檔案上傳
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
         flashOnce();
 
 
 
         
-        // // 2. 準備傳送到 n8n 的資料
-        // const formData = new FormData();
-        // formData.append("image", "capture.jpg");
-        // // 如果有需要傳送其他欄位，例如 userID，可以在此加入
-        // // formData.append("userId", "user_123");
+        // 2. 準備傳送到 n8n 的資料
+        const formData = new FormData();
+        formData.append("image", blob, "capture.jpg");
+        // 如果有需要傳送其他欄位，例如 userID，可以在此加入
+        // formData.append("userId", "user_123");
 
-        // // 3. 發送請求至 n8n
-        // const response = await fetch(N8N_WEBHOOK_URL, {
-        //     method: "POST",
-        //     body: formData, // 使用 FormData 會自動處理 Content-Type: multipart/form-data
-        // });
+        // 3. 發送請求至 n8n
+        const response = await fetch(N8N_WEBHOOK_URL, {
+            method: "POST",
+            body: formData, // 使用 FormData 會自動處理 Content-Type: multipart/form-data
+        });
 
-        // if (!response.ok) throw new Error("伺服器回應錯誤");
+        if (!response.ok) throw new Error("伺服器回應錯誤");
 
-        // // 4. 接收 n8n 回傳的分析結果
-        // // 假設 n8n 回傳的 JSON 結構與你原本的 payload 格式相同
-        // const n8nResult = await response.json();
+        // 4. 接收 n8n 回傳的分析結果
+        // 假設 n8n 回傳的 JSON 結構與你原本的 payload 格式相同
+        const n8nResult = await response.json();
 
 
         
