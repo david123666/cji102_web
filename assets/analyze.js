@@ -87,6 +87,8 @@ captureBtn.addEventListener("click", async () => {
         
         // 將照片轉為 Blob (二進位制)，這對 API 傳輸效能較好且模擬真實檔案上傳
         const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
+        await liff.init({ liffId: "2008825433-EiKVRQPf" });
+        const profile = await liff.getProfile();
         flashOnce();
         
         // 2. 準備傳送到 n8n 的資料
