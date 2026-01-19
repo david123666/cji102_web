@@ -6,7 +6,7 @@
         const profile = await liff.getProfile();
         const idToken = liff.getIDToken(); // 取得 ID Token
         // 傳送給 n8n
-        await fetch("https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis", {
+        await fetch("https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
