@@ -6,10 +6,19 @@
 /**
  * analyze.js - 串接 n8n API 版
  */
-
+await liff.init({ liffId: "2008825433-EiKVRQPf" });
+if (!liff.isLoggedIn()) {
+    liff.login();
+} else {
+    const profile = await liff.getProfile();
+    const idToken = liff.getIDToken(); // 取得 ID Token
+        // 傳送給 n8n
+        // alert("資料已傳送至 n8n！");
+        // liff.closeWindow(); // 關閉 LIFF 視窗
+}
 // ------- 配置 n8n Webhook 網址 -------
 // 請將此處替換為你在 n8n 設定的 Production Webhook URL
-const N8N_WEBHOOK_URL = "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis1";
+const N8N_WEBHOOK_URL = "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis1";
 // ------- 全域變數與初始化 -------
 const toastEl = document.getElementById("toast");
 const video = document.getElementById("video");
@@ -95,7 +104,7 @@ captureBtn.addEventListener("click", async () => {
         const formData = new FormData();
         formData.append("image", blob, "capture.jpg");
         // 如果有需要傳送其他欄位，例如 userID，可以在此加入
-        formData.append("userId", "profile.userId");
+        formData.append("userId", profile.userId);
 
         // 3. 發送請求至 n8n
         const response = await fetch(N8N_WEBHOOK_URL, {
