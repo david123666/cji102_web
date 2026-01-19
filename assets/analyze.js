@@ -94,7 +94,7 @@ captureBtn.addEventListener("click", async () => {
         const formData = new FormData();
         formData.append("image", blob, "capture.jpg");
         // 如果有需要傳送其他欄位，例如 userID，可以在此加入
-        formData.append("userId", "123");
+        // formData.append("userId", "123");
 
         // 3. 發送請求至 n8n
         const response = await fetch(N8N_WEBHOOK_URL, {
