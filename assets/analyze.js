@@ -81,12 +81,15 @@ captureBtn.addEventListener("click", async () => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0);
         
-        // 將照片轉為 Blob (二進位制)，這對 API 傳輸效能較好且模擬真實檔案上傳
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
+        // 將照片轉為 Base64 字串 (品質 0.9)
+        const photoBase64 = canvas.toDataURL("image/jpeg", 0.9);
         flashOnce();
 
 
-
+        
+        // 將照片轉為 Blob (二進位制)，這對 API 傳輸效能較好且模擬真實檔案上傳
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
+        flashOnce();
         
         // 2. 準備傳送到 n8n 的資料
         const formData = new FormData();
