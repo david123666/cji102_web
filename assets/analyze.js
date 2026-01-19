@@ -7,7 +7,7 @@
  */
 // ------- 配置 n8n Webhook 網址 -------
 // 請將此處替換為你在 n8n 設定的 Production Webhook URL
-const N8N_WEBHOOK_URL = "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis1";
+const N8N_WEBHOOK_URL = "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis1";
 // ------- 全域變數與初始化 -------
 const toastEl = document.getElementById("toast");
 const video = document.getElementById("video");
