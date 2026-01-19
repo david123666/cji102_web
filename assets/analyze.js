@@ -12,7 +12,7 @@ if (!liff.isLoggedIn()) {
     liff.login();
 } else {
   const profile = await liff.getProfile();
-  const idToken = liff.getIDToken(); // 取得 ID Token
+  // const idToken = liff.getIDToken(); // 取得 ID Token
         // 傳送給 n8n
         // alert("資料已傳送至 n8n！");
         // liff.closeWindow(); // 關閉 LIFF 視窗
@@ -106,7 +106,7 @@ captureBtn.addEventListener("click", async () => {
         const formData = new FormData();
         formData.append("image", blob, "capture.jpg");
         // 如果有需要傳送其他欄位，例如 userID，可以在此加入
-        formData.append("userId", profile.userId);
+        formData.append("userId", profile);
 
         // 3. 發送請求至 n8n
         const response = await fetch(N8N_WEBHOOK_URL, {
