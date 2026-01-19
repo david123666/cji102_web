@@ -87,15 +87,13 @@ captureBtn.addEventListener("click", async () => {
         
         // 將照片轉為 Blob (二進位制)，這對 API 傳輸效能較好且模擬真實檔案上傳
         const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.8));
-        await liff.init({ liffId: "2008825433-EiKVRQPf" });
-        const profile = await liff.getProfile();
         flashOnce();
         
         // 2. 準備傳送到 n8n 的資料
         const formData = new FormData();
         formData.append("image", blob, "capture.jpg");
         // 如果有需要傳送其他欄位，例如 userID，可以在此加入
-        formData.append("userId", profile.userId);
+        // formData.append("userId", profile.userId);
 
         // 3. 發送請求至 n8n
         const response = await fetch(N8N_WEBHOOK_URL, {
