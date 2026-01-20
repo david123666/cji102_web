@@ -98,7 +98,7 @@ captureBtn.addEventListener("click", async () => {
         // 3. 發送請求至 n8n
         const response = await fetch(N8N_WEBHOOK_URL, {
             method: "POST",
-            body: blob, // 使用 FormData 會自動處理 Content-Type: multipart/form-data
+            body: formData, // 使用 FormData 會自動處理 Content-Type: multipart/form-data
         });
 
         if (!response.ok) throw new Error("伺服器回應錯誤");
