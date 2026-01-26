@@ -1,75 +1,1073 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>AI 氣色 × 膚況顧問</title>
-  <link rel="stylesheet" href="assets/app.css" />
+  <title>分析</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    #cameraBox {
+      width: 360px;
+      height: 480px;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      background: rgba(0, 0, 0, .25);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, .08);
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .18);
+    }
+
+    /* video + canvas cover 疊滿 */
+    #video,
+    #meshCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* video + canvas cover 疊滿 */
+    /* #video, #meshCanvas{
+      object-fit: contain;
+    } */
+
+    /* 鏡像一致 */
+    #video {
+      transform: scaleX(-1);
+    }
+
+    #meshCanvas {
+      transform: scaleX(-1);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .hint {
+      position: absolute;
+      top: 14px;
+      left: 12px;
+      right: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .26);
+      border: 1px solid rgba(255, 255, 255, .22);
+      color: rgba(255, 255, 255, .92);
+      font-size: 13px;
+      letter-spacing: .6px;
+      text-align: center;
+      z-index: 4;
+    }
+
+    #faceGuide {
+      position: absolute;
+      inset: 74px 44px 98px 44px;
+      border-radius: 999px;
+      border: 2px dashed rgba(255, 255, 255, .65);
+      pointer-events: none;
+      animation: pulse 2.5s infinite ease-in-out;
+      z-index: 3;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: .35;
+        transform: scale(.985)
+      }
+
+      50% {
+        opacity: .85;
+        transform: scale(1)
+      }
+
+      100% {
+        opacity: .35;
+        transform: scale(.985)
+      }
+    }
+
+    #captureBtn {
+      position: absolute;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 90px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .75), rgba(255, 255, 255, 0) 45%),
+        linear-gradient(135deg, rgba(255, 157, 184, .95), rgba(242, 216, 140, .92));
+      border: 6px solid rgba(255, 255, 255, .95);
+      box-shadow: 0 10px 24px rgba(255, 157, 184, .3), 0 20px 50px rgba(0, 0, 0, .25);
+      cursor: pointer;
+      z-index: 5;
+      opacity: 0.3;
+      /* 🎨 改善：0.4 → 0.3 更明顯的禁用狀態 */
+      pointer-events: none;
+      filter: grayscale(0.6);
+      /* 🎨 新增：灰階效果強化禁用視覺 */
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #captureBtn.active {
+      opacity: 1;
+      pointer-events: auto;
+      filter: grayscale(0);
+      /* 🎨 新增：移除灰階效果 */
+      animation: capturePulse 2s infinite ease-in-out;
+      box-shadow:
+        0 10px 24px rgba(255, 157, 184, .4),
+        0 20px 50px rgba(0, 0, 0, .3),
+        0 0 0 4px rgba(255, 255, 255, .5);
+      /* 🎨 新增：外光圈效果 */
+    }
+
+    @keyframes capturePulse {
+
+      0%,
+      100% {
+        transform: translateX(-50%) scale(1);
+        box-shadow: 0 10px 24px rgba(255, 157, 184, .3), 0 20px 50px rgba(0, 0, 0, .25);
+      }
+
+      50% {
+        transform: translateX(-50%) scale(1.05);
+        box-shadow: 0 12px 28px rgba(255, 157, 184, .4), 0 24px 60px rgba(0, 0, 0, .3);
+      }
+    }
+
+    /* 多層級對齊狀態 - 提供更細緻的視覺回饋 */
+    #faceGuide.aligned-perfect {
+      border: 3px solid #10b981;
+      animation: none;
+      background: rgba(16, 185, 129, 0.15);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+
+    #faceGuide.aligned-good {
+      border: 3px solid #4ade80;
+      animation: none;
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    #faceGuide.aligned-poor {
+      border: 2px dashed rgba(255, 255, 255, .65);
+      animation: pulse 2.5s infinite ease-in-out;
+    }
+
+
+    #cameraBox.loading::after {
+      content: "AI 分析中…";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 14, 24, .62);
+      font-size: 18px;
+      letter-spacing: 2px;
+      z-index: 10;
+    }
+
+    /* 載入進度條 */
+    #loadingProgress {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 300px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      z-index: 6;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #loadingProgress.show {
+      opacity: 1;
+    }
+
+    #loadingProgress::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: var(--progress, 0%);
+      background: linear-gradient(90deg, #4ade80, #10b981);
+      transition: width 0.3s ease;
+    }
+
+
+    #flash {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+      z-index: 999;
+    }
+
+    @media (max-width: 920px) {
+      #cameraBox {
+        width: min(92vw, 420px);
+        height: min(128vw, 560px);
+      }
+    }
+
+    /* ========== 照片預覽功能 ========== */
+    #previewContainer {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    #previewContainer.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    #previewImg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      /* 保持與預覽鏡像一致 */
+    }
+
+    /* 品質評分面板 */
+    #qualityPanel {
+      position: absolute;
+      bottom: 100px;
+      left: 14px;
+      right: 14px;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      z-index: 21;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .quality-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.95;
+    }
+
+    .quality-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .quality-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .quality-label {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    .quality-stars {
+      color: #fbbf24;
+      font-size: 16px;
+      letter-spacing: 2px;
+      font-family: monospace;
+    }
+
+    /* 預覽按鈕組合 */
+    .preview-btns {
+      position: absolute;
+      bottom: 20px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      gap: 12px;
+      z-index: 21;
+    }
+
+    .preview-btn {
+      flex: 1;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-retake {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-proceed {
+      background: linear-gradient(135deg, #4ade80, #10b981);
+      color: white;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .preview-btn:active {
+      transform: scale(0.96);
+      filter: brightness(0.9);
+    }
+  </style>
 </head>
+
 <body>
   <div class="bg-glass"></div>
 
-  <header>
-    <div class="brand">
-      <div class="logo"></div>
-      <div>
-        <h1>AI 氣色 × 膚況顧問</h1>
-        <p>首頁 / 入口</p>
-      </div>
-    </div>
-    <!-- <button class="btn" onclick="location.href='login.html'">登入</button> -->
-  </header>
+  <!-- Header 已移除,保持頁面簡潔 -->
 
   <div class="stage">
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <div class="title">開始你的膚況分析</div>
-          <div class="sub">拍照 → 分析 → 圖形結果 + 建議</div>
-        </div>
-        <span class="tag">v1</span>
-      </div>
-      <div class="body">
-        <div class="row" style="align-items:center;">
-          <div class="kpi">
-            <div class="sub">快速</div>
-            <div class="big">3 秒</div>
-          </div>
-          <div class="kpi">
-            <div class="sub">指標</div>
-            <div class="big">6 項</div>
-          </div>
-          <div class="kpi">
-            <div class="sub">輸出</div>
-            <div class="big">建議</div>
-          </div>
-        </div>
+    <div id="cameraBox">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="meshCanvas"></canvas>
+      <div class="hint" id="hint">相機啟動中…</div>
+      <div id="faceGuide"></div>
+      <div id="captureBtn" aria-label="拍照" role="button"></div>
+      <div id="loadingProgress"></div>
 
-        <div style="margin-top:16px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn-primary btn-lg" id="goAnalyze">&#x958B;&#x59CB;&#x5206;&#x6790;</button>
-          <button class="btn" id="goResult">看上次結果</button>
+      <!-- 照片預覽容器 -->
+      <div id="previewContainer">
+        <img id="previewImg" src="" alt="拍攝預覽">
+        <div id="qualityPanel">
+          <div class="quality-title">🔬 AI 品質分析</div>
+          <div class="quality-row">
+            <span class="quality-label">✨ 畫面清晰度</span>
+            <span class="quality-stars" id="star-blur">★★★★★</span>
+          </div>
+          <div class="quality-row">
+            <span class="quality-label">💡 光線充足度</span>
+            <span class="quality-stars" id="star-brightness">★★★★★</span>
+          </div>
+          <div class="quality-row">
+            <span class="quality-label">📏 臉部對齊度</span>
+            <span class="quality-stars" id="star-alignment">★★★★★</span>
+          </div>
+        </div>
+        <div class="preview-btns">
+          <button id="retakeBtn" class="preview-btn btn-retake">重拍</button>
+          <button id="usePhotoBtn" class="preview-btn btn-proceed">使用這張照片</button>
         </div>
       </div>
     </div>
   </div>
 
+  <div id="flash"></div>
   <div class="toast" id="toast"></div>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="assets/LINEbot.js"></script>
+  <canvas id="canvas" style="display:none;"></canvas>
+
   <script type="module">
-    import { requireLogin, loadResult, toast } from "./assets/app.js";
+    import {
+      FaceLandmarker,
+      FilesetResolver
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+    import { CONFIG } from "./js/config.js";
 
-    document.getElementById("goAnalyze").onclick = async () => {
-      // 可以選擇強制要登入：await requireLogin();
-      // 目前先友善：沒登入也能進分析（你之後正式再改成強制）
-      location.href = "survery.html";
+    // -------- toast ----------
+    const toastEl = document.getElementById("toast");
+    function toast(msg) {
+      if (!toastEl) return alert(msg);
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    // -------- DOM 快取（優化：避免重複查詢）----------
+    const DOM = {
+      video: document.getElementById("video"),
+      cameraBox: document.getElementById("cameraBox"),
+      captureBtn: document.getElementById("captureBtn"),
+      canvas: document.getElementById("canvas"),
+      flash: document.getElementById("flash"),
+      meshCanvas: document.getElementById("meshCanvas"),
+      hint: document.getElementById("hint"),
+      faceGuide: document.getElementById("faceGuide"),
+      // 預覽相關元素
+      previewContainer: document.getElementById("previewContainer"),
+      previewImg: document.getElementById("previewImg"),
+      retakeBtn: document.getElementById("retakeBtn"),
+      usePhotoBtn: document.getElementById("usePhotoBtn"),
+      starBlur: document.getElementById("star-blur"),
+      starBrightness: document.getElementById("star-brightness"),
+      starAlignment: document.getElementById("star-alignment")
     };
 
-    document.getElementById("goResult").onclick = () => {
-      const r = loadResult();
-      if(!r) return toast("目前沒有結果，先去分析一次");
-      location.href = "result.html";
+    // 向後相容：保留原有變數名稱
+    const video = DOM.video;
+    const cameraBox = DOM.cameraBox;
+    const captureBtn = DOM.captureBtn;
+    const canvas = DOM.canvas;
+    const flash = DOM.flash;
+    const meshCanvas = DOM.meshCanvas;
+    const hint = DOM.hint;
+
+    const meshCtx = meshCanvas.getContext("2d", { alpha: true });
+
+    // -------- data ----------
+    const surveyRaw = localStorage.getItem("survey") || "{}";
+
+    // -------- state ----------
+    let stream = null;
+    let busy = false;
+
+    let faceLandmarker = null;
+    let running = false;
+    let lastMetrics = null;
+    let isAligned = false; // 是否對準
+
+    // 效能優化：FPS 限制
+    let lastFrameTime = 0;
+    const FPS_LIMIT = 30; // 限制在 30 FPS 以節省電力
+    const FRAME_INTERVAL = 1000 / FPS_LIMIT;
+
+    // 品質評分快取（用於預覽功能）
+    let latestScores = {
+      brightness: 0,
+      blur: 0,
+      alignment: 'poor'
     };
+
+    const SKIP_UPLOAD = (typeof CONFIG === "object" && CONFIG !== null && "SKIP_UPLOAD" in CONFIG)
+      ? CONFIG.SKIP_UPLOAD
+      : true;
+
+    // 框線座標 (對應 CSS inset: 74px 44px 98px 44px)
+    // 相機寬度 360, 高度 480
+    const GUIDE = {
+      cx: 180, // 中心 X
+      cy: 228, // 中心 Y
+      w: 272,  // 寬度
+      h: 308   // 高度
+    };
+
+    // =========================
+    // cover 對齊：canvas 尺寸跟 cameraBox 一樣
+    // =========================
+    function syncOverlaySize() {
+      const rect = cameraBox.getBoundingClientRect();
+      meshCanvas.width = Math.round(rect.width * devicePixelRatio);
+      meshCanvas.height = Math.round(rect.height * devicePixelRatio);
+      meshCanvas.style.width = rect.width + "px";
+      meshCanvas.style.height = rect.height + "px";
+      meshCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+
+    // =========================
+    // 初始化模型（優化：加入載入提示與錯誤處理）
+    // =========================
+    async function initModel() {
+      const progressBar = document.getElementById('loadingProgress');
+
+      try {
+        // 顯示進度條
+        progressBar.classList.add('show');
+        progressBar.style.setProperty('--progress', '10%');
+        hint.textContent = "AI 模型載入中，請稍候...";
+
+        const fileset = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+        progressBar.style.setProperty('--progress', '40%');
+
+        faceLandmarker = await FaceLandmarker.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          numFaces: 1,
+          outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: false,
+        });
+
+        progressBar.style.setProperty('--progress', '100%');
+        hint.textContent = "模型載入完成！";
+
+        // 延遲隱藏進度條
+        setTimeout(() => progressBar.classList.remove('show'), 500);
+      } catch (error) {
+        console.error("MediaPipe 模型載入失敗:", error);
+        hint.textContent = "AI 模型載入失敗，請重新整理頁面";
+        toast("AI 模型載入失敗，請檢查網路連線");
+        progressBar.classList.remove('show');
+        throw error;
+      }
+    }
+
+    function packMetrics(result) {
+      const blend = result.faceBlendshapes?.[0]?.categories ?? [];
+      return {
+        ts: Date.now(),
+        blendshapes: blend.map(c => ({ name: c.categoryName, score: c.score })),
+      };
+    }
+
+    // =========================
+    // 取得臉部特徵點（不繪製網格，簡化視覺）
+    // =========================
+    function drawEffect(result) {
+      const rect = cameraBox.getBoundingClientRect();
+      meshCtx.clearRect(0, 0, rect.width, rect.height);
+
+      const landmarks = result.faceLandmarks?.[0];
+      if (!landmarks || !video.videoWidth || !video.videoHeight) return [];
+
+      const srcW = video.videoWidth;
+      const srcH = video.videoHeight;
+      const dstW = rect.width;
+      const dstH = rect.height;
+      const scale = Math.max(dstW / srcW, dstH / srcH);
+      const offsetX = (dstW - srcW * scale) / 2;
+      const offsetY = (dstH - srcH * scale) / 2;
+
+      const points = new Array(landmarks.length);
+      for (let i = 0; i < landmarks.length; i++) {
+        const lm = landmarks[i];
+        points[i] = {
+          x: lm.x * srcW * scale + offsetX,
+          y: lm.y * srcH * scale + offsetY,
+          visibility: lm.visibility || 1  // 保留可見度資訊
+        };
+      }
+
+      // 不繪製網格，只回傳座標點供對齊檢測使用
+      return points;
+    }
+
+    /**
+     * 檢查臉部是否被遮擋
+     * @param {Array} points - 臉部特徵點 (包含 visibility)
+     * @returns {string|null} 如果有遮擋返回提示訊息,否則返回 null
+     */
+    function checkFaceOcclusion(points) {
+      if (!points || points.length === 0) return null;
+
+      // MediaPipe 的重要特徵點索引
+      const IMPORTANT_POINTS = {
+        '鼻子': 1,        // 鼻尖
+        '左眼': 33,       // 左眼
+        '右眼': 263,      // 右眼
+        '嘴巴': 13,       // 嘴巴中心
+        '左臉頰': 234,    // 左臉頰
+        '右臉頰': 454     // 右臉頰
+      };
+
+      const MIN_VISIBILITY = 0.5;  // 最低可見度閾值
+
+      for (const [name, index] of Object.entries(IMPORTANT_POINTS)) {
+        const point = points[index];
+        if (!point || (point.visibility !== undefined && point.visibility < MIN_VISIBILITY)) {
+          return `請勿遮擋${name}`;
+        }
+      }
+
+      return null;  // 沒有遮擋
+    }
+
+
+    /**
+     * 檢測畫面亮度（光線檢測）
+     * @returns {number} 亮度值 0-255
+     */
+    function detectBrightness() {
+      const tempCanvas = document.createElement('canvas');
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (!w || !h) return 0;
+
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      const ctx = tempCanvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      let sum = 0;
+
+      // 計算平均亮度
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        // 使用加權平均計算亮度
+        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+        sum += brightness;
+      }
+
+      return sum / (w * h);
+    }
+
+    /**
+     * 檢測畫面模糊度（使用 Laplacian 變異數）
+     * @returns {number} 清晰度分數，越高越清晰
+     */
+    function detectBlur() {
+      const tempCanvas = document.createElement('canvas');
+      const w = Math.min(video.videoWidth, 320); // 縮小以提升效能
+      const h = Math.min(video.videoHeight, 240);
+      if (!w || !h) return 0;
+
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      const ctx = tempCanvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+
+      // 簡化的 Laplacian 計算
+      let variance = 0;
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = (y * w + x) * 4;
+          const center = data[idx];
+          const top = data[((y - 1) * w + x) * 4];
+          const bottom = data[((y + 1) * w + x) * 4];
+          const left = data[(y * w + (x - 1)) * 4];
+          const right = data[(y * w + (x + 1)) * 4];
+
+          const laplacian = Math.abs(4 * center - top - bottom - left - right);
+          variance += laplacian * laplacian;
+        }
+      }
+
+      return variance / (w * h);
+    }
+
+    /**
+     * 檢查臉部對準狀態（加入品質檢測）
+     * @param {Array<{x: number, y: number}>} points - MediaPipe 偵測到的臉部特徵點
+     * @returns {string} 對齊狀態: 'perfect', 'good', 'poor'
+     */
+    function checkAlignment(points) {
+      if (!points || points.length === 0) {
+        updateAlignmentUI('poor');
+        return 'poor';
+      }
+
+
+      // 取得臉部範圍
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      points.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      });
+
+      const faceW = maxX - minX;
+      const faceCx = (minX + maxX) / 2;
+      const faceCy = (minY + maxY) / 2;
+
+      const dist = Math.sqrt(Math.pow(faceCx - GUIDE.cx, 2) + Math.pow(faceCy - GUIDE.cy, 2));
+      const wRatio = faceW / GUIDE.w;
+
+      // 品質檢測
+      const brightness = detectBrightness();
+      const blurScore = detectBlur();
+
+      // 儲存品質評分供預覽使用
+      latestScores.brightness = brightness;
+      latestScores.blur = blurScore;
+      latestScores.alignment = 'poor'; // 預設為 poor，後續會更新
+
+      // 🔍 Debug: 輸出品質數值
+      console.log('品質檢測:', {
+        brightness: brightness.toFixed(1),
+        blurScore: blurScore.toFixed(1),
+        wRatio: wRatio.toFixed(2),
+        dist: dist.toFixed(1)
+      });
+
+      // 品質閾值
+      const MIN_BRIGHTNESS = 80;  // 最低亮度要求
+      const MAX_BRIGHTNESS = 220; // 最高亮度（避免過曝）
+      const MIN_BLUR_SCORE = 100; // 最低清晰度要求
+
+      // 嚴格的三層級判斷
+      let state = 'poor';
+      let qualityIssue = '';
+
+      // 🆕 優先檢查遮擋
+      const occlusionIssue = checkFaceOcclusion(points);
+      if (occlusionIssue) {
+        qualityIssue = occlusionIssue;
+      }
+      // 檢查光線
+      else if (brightness < MIN_BRIGHTNESS) {
+        qualityIssue = '光線不足';
+      } else if (brightness > MAX_BRIGHTNESS) {
+        qualityIssue = '光線過強';
+      }
+      // 檢查清晰度
+      else if (blurScore < MIN_BLUR_SCORE) {
+        qualityIssue = '畫面模糊';
+      }
+      // 檢查距離
+      else if (wRatio < 0.75 || wRatio > 1.05) {
+        qualityIssue = wRatio < 0.75 ? '請靠近一點' : '請遠離一點';
+      }
+      // 檢查位置
+      else if (dist < 20 && wRatio >= 0.9 && wRatio <= 1.0) {
+        state = 'perfect';
+      } else if (dist < 35 && wRatio >= 0.8 && wRatio <= 1.1) {
+        state = 'good';
+      } else {
+        qualityIssue = '請將臉部移至框線內';
+      }
+
+      // 更新對齊評分
+      latestScores.alignment = state;
+
+      updateAlignmentUI(state, qualityIssue);
+      return state;
+    }
+
+    /**
+     * 更新對齊狀態的 UI 回饋
+     * 🔧 修復：即使 state 相同，qualityIssue 改變時也要更新提示
+     */
+    let currentAlignmentState = 'poor';
+    function updateAlignmentUI(newState, qualityIssue = '') {
+      // 只在 state 改變時更新 CSS class
+      if (newState !== currentAlignmentState) {
+        // 移除所有對齊狀態
+        DOM.faceGuide.classList.remove('aligned-perfect', 'aligned-good', 'aligned-poor');
+
+        // 加入新狀態
+        DOM.faceGuide.classList.add(`aligned-${newState}`);
+        currentAlignmentState = newState;
+      }
+
+      // 每次都更新按鈕與提示文字（確保 qualityIssue 變化時也能更新）
+      if (newState === 'perfect') {
+        DOM.captureBtn.classList.add('active');
+        DOM.hint.textContent = "完美對準！保持姿勢拍照";
+      } else if (newState === 'good') {
+        DOM.captureBtn.classList.add('active');
+        DOM.hint.textContent = "已對準，可以拍照了";
+      } else {
+        DOM.captureBtn.classList.remove('active');
+        // 直接顯示品質問題提示
+        DOM.hint.textContent = qualityIssue || '請將臉部移至框線內';
+      }
+    }
+
+
+    /**
+     * 主偵測迴圈（優化：加入 FPS 限制以節省效能）
+     */
+    function loop(timestamp) {
+      if (!running) return;
+
+      // 效能優化：限制 FPS
+      if (timestamp - lastFrameTime < FRAME_INTERVAL) {
+        requestAnimationFrame(loop);
+        return;
+      }
+      lastFrameTime = timestamp;
+
+      if (!video.videoWidth || !video.videoHeight) {
+        requestAnimationFrame(loop);
+        return;
+      }
+
+      try {
+        const now = performance.now();
+        const result = faceLandmarker.detectForVideo(video, now);
+        const points = drawEffect(result);
+        checkAlignment(points);
+        lastMetrics = packMetrics(result);
+      } catch (e) {
+        console.error("MediaPipe 偵測錯誤:", e);
+        meshCtx.clearRect(0, 0, meshCanvas.width, meshCanvas.height);
+        // 錯誤處理：如果連續失敗，提示使用者
+        if (!window._detectionErrorCount) window._detectionErrorCount = 0;
+        window._detectionErrorCount++;
+        if (window._detectionErrorCount > 100) {
+          toast("臉部偵測異常，請重新整理頁面");
+          window._detectionErrorCount = 0;
+        }
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    // =========================
+    // 相機
+    // =========================
+    /**
+     * 開啟相機（優化：加入完整錯誤處理）
+     */
+    async function openCamera() {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("此瀏覽器不支援相機功能");
+        }
+
+        hint.textContent = "正在開啟相機...";
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+
+        video.srcObject = stream;
+
+        await new Promise(resolve => {
+          if (video.readyState >= 2) return resolve();
+          video.onloadedmetadata = () => resolve();
+        });
+
+        // autoplay 保險：有些環境會卡住
+        const kick = async () => { try { await video.play(); } catch (e) { } };
+        await kick();
+        window.addEventListener("pointerdown", kick, { once: true });
+
+        syncOverlaySize();
+        window.addEventListener("resize", syncOverlaySize);
+
+        if (!faceLandmarker) await initModel();
+
+        running = true;
+        hint.textContent = "相機已啟動，請對準框線後按下拍照";
+        loop();
+      } catch (error) {
+        console.error("相機啟動失敗:", error);
+        hint.textContent = "相機啟動失敗";
+
+        // 根據錯誤類型給予不同提示
+        if (error.name === "NotAllowedError") {
+          toast("請允許使用相機權限");
+        } else if (error.name === "NotFoundError") {
+          toast("找不到相機裝置");
+        } else {
+          toast("相機啟動失敗，請使用 Chrome 或 Safari");
+        }
+        throw error;
+      }
+    }
+
+    function stopCamera() {
+      running = false;
+      meshCtx.clearRect(0, 0, meshCanvas.width, meshCanvas.height);
+
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+    }
+
+    function flashOnce() {
+      flash.style.opacity = 1;
+      setTimeout(() => flash.style.opacity = 0, 120);
+    }
+
+    async function getJpegBlob() {
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (!w || !h) throw new Error("Video not ready");
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      ctx.save();
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, w, h);
+      ctx.restore();
+
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(b => resolve(b), "image/jpeg", 0.95);
+      });
+      if (!blob) throw new Error("toBlob failed");
+      return blob;
+    }
+
+    /**
+     * 輔助函數：生成星星字串
+     */
+    function getStarString(count) {
+      return "★".repeat(count) + "☆".repeat(5 - count);
+    }
+
+    /**
+     * 顯示照片預覽與品質評分
+     */
+    function showPhotoPreview(dataUrl) {
+      // 停止相機以節省資源
+      stopCamera();
+
+      // 顯示預覽圖片
+      DOM.previewImg.src = dataUrl;
+
+      // 計算清晰度星星 (blur score 範圍約 100-500+)
+      let blurStars = 2;
+      if (latestScores.blur > 400) blurStars = 5;
+      else if (latestScores.blur > 250) blurStars = 4;
+      else if (latestScores.blur > 150) blurStars = 3;
+      DOM.starBlur.textContent = getStarString(blurStars);
+
+      // 計算亮度星星 (brightness 範圍約 80-220)
+      let brightStars = 2;
+      const b = latestScores.brightness;
+      if (b >= 120 && b <= 180) brightStars = 5;
+      else if (b >= 100 && b <= 200) brightStars = 4;
+      else if (b >= 80 && b <= 220) brightStars = 3;
+      DOM.starBrightness.textContent = getStarString(brightStars);
+
+      // 計算對齊星星
+      let alignStars = 2;
+      if (latestScores.alignment === 'perfect') alignStars = 5;
+      else if (latestScores.alignment === 'good') alignStars = 4;
+      DOM.starAlignment.textContent = getStarString(alignStars);
+
+      // 顯示預覽容器
+      DOM.previewContainer.classList.add("show");
+      DOM.hint.textContent = "請確認照片品質";
+    }
+
+    // 重拍按鈕
+    DOM.retakeBtn.onclick = () => {
+      DOM.previewContainer.classList.remove("show");
+      openCamera(); // 重新啟動相機
+    };
+
+    // 使用照片按鈕
+    DOM.usePhotoBtn.onclick = async () => {
+      if (busy) return;
+      busy = true;
+
+      cameraBox.classList.add("loading");
+      DOM.hint.textContent = "正在處理照片...";
+
+      try {
+        const dataUrl = localStorage.getItem("user_photo");
+        if (!dataUrl) throw new Error("No photo found");
+
+        if (SKIP_UPLOAD) {
+          localStorage.removeItem("result");
+          location.href = "survey_new.html?demo=1";
+          return;
+        }
+
+        // 如果需要上傳到後端，使用儲存的 blob
+        const blob = window._tempBlob;
+        if (!blob) throw new Error("No blob found");
+
+        const form = new FormData();
+        form.append("photo", blob, "capture.jpg");
+        form.append("survey", surveyRaw);
+        if (lastMetrics) form.append("metrics_json", JSON.stringify(lastMetrics));
+
+        const res = await fetch("api/analyze.php", { method: "POST", body: form });
+
+        if (!res.ok) {
+          toast("後端分析失敗（請看 api/analyze.php）");
+          return;
+        }
+
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          const text = await res.text();
+          console.error("Non-JSON response:", text.slice(0, 400));
+          toast("後端回傳不是 JSON（請檢查 PHP 輸出）");
+          return;
+        }
+
+        const payload = await res.json();
+        localStorage.setItem("result", JSON.stringify(payload));
+
+        location.href = "survey_new.html";
+      } catch (e) {
+        console.error(e);
+        toast("發生錯誤，請重試");
+        busy = false;
+        cameraBox.classList.remove("loading");
+      }
+    };
+
+    captureBtn.addEventListener("click", async () => {
+      if (busy) return;
+
+
+      busy = true;
+      cameraBox.classList.add("loading");
+
+      try {
+        if (!stream) throw new Error("camera not started");
+
+        const blob = await getJpegBlob();
+        flashOnce();
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+        localStorage.setItem("user_photo", dataUrl);
+
+        // 儲存 blob 供後續使用
+        window._tempBlob = blob;
+
+        // 顯示預覽而非直接跳轉
+        showPhotoPreview(dataUrl);
+
+      } catch (e) {
+        console.error(e);
+        toast("拍照失敗，請重試");
+      } finally {
+        cameraBox.classList.remove("loading");
+        busy = false;
+      }
+    });
+
+    // 進頁面就啟動相機（直接執行，不用 DOMContentLoaded）
+    openCamera().catch(e => {
+      console.error(e);
+      toast("無法開啟相機：請允許權限");
+      hint.textContent = "相機啟動失敗：請允許權限";
+    });
+
+    window.addEventListener("beforeunload", stopCamera);
   </script>
 </body>
+
 </html>
