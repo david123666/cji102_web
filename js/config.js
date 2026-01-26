@@ -4,7 +4,7 @@
  */
 export const CONFIG = {
     // LINE LIFF 設定
-    LIFF_ID: '2008825433-EiKVRQPf', // 注意：你原本 main 裡用的是 2008825433-EiKVRQPf，請確認哪一個才是正確的
+    LIFF_ID: "2008825433-EiKVRQPf", // 注意：你原本 main 裡用的是 2008825433-EiKVRQPf，請確認哪一個才是正確的
 
     // API 設定
     API_URL: "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis",
