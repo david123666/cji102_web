@@ -7,7 +7,7 @@ export const CONFIG = {
     LIFF_ID: '2008825433-EiKVRQPf', // 注意：你原本 main 裡用的是 2008825433-EiKVRQPf，請確認哪一個才是正確的
 
     // API 設定
-    API_URL: "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis",
+    API_URL: "https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook/skin-analysis",
 
     // 效能設定
     FPS_LIMIT: 30, // 限制在 30 FPS 以節省電力
