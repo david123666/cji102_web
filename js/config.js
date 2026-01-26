@@ -62,7 +62,7 @@ async function main() {
  */
 async function uploadUserData(profile) {
     try {
-        const response = await fetch(CONFIG.API_URL, {
+        const response = await fetch("https://lumpier-odessa-distinguishingly.ngrok-free.dev/webhook-test/skin-analysis", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
