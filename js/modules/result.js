@@ -7,6 +7,11 @@
  * - Sticky 導航：固定在頂部，點擊快速跳轉
  * - 滾動偵測：自動高亮當前區塊
  * 更新：2026-02-03
+ *
+ * ✅ GA4 / GTM 追蹤（新增）
+ * - A/B/C/D 區塊停留時間：zone_view_start / zone_view_end
+ * - 商品點擊率：product_click（官網/MOMO 連結點擊）
+ * - 結果頁渲染完成：result_rendered（選用）
  */
 
 import { CONFIG, ICON_PATHS } from '../config.js';
@@ -24,6 +29,13 @@ let scrollObserver = null; // IntersectionObserver 實例
 
 // 輪播實例（用於清理）
 let carouselInstances = [];
+
+// ==================== GA4 Tracking 狀態（新增） ====================
+let dwellObserver = null;                 // 用於 A/B/C/D 停留時間
+let dwellTimers = new Map();              // sectionEl -> startTimeMs
+let isDwellTrackingActive = false;        // 避免重複綁定
+let productClickBound = false;            // 避免重複綁定
+let sentResultRendered = false;           // 避免重複送 result_rendered
 
 /**
  * 初始化結果頁模組
@@ -50,6 +62,17 @@ function render() {
         scrollObserver.disconnect();
         scrollObserver = null;
     }
+
+    // ===== GA4 Tracking: 清理 dwell observer =====
+    if (dwellObserver) {
+        dwellObserver.disconnect();
+        dwellObserver = null;
+    }
+    dwellTimers.clear();
+    isDwellTrackingActive = false;
+    productClickBound = false;
+    sentResultRendered = false;
+    // ===========================================
 
     if (currentView === 'summary') {
         renderSummaryView();
@@ -236,6 +259,10 @@ function renderDetailView() {
 
     // 初始化返回頂部按鈕
     initBackToTop();
+
+    // ===== GA4 Tracking: 啟動 A/B/C/D 停留 + 產品點擊 =====
+    initGtmTracking();
+    // =====================================================
 }
 
 /**
@@ -742,7 +769,7 @@ function renderSectionA() {
                         cy="80"
                         r="70"
                         stroke-dasharray="440"
-                        stroke-dashoffset="${440 - (440 * (data.score || 0) / 100)}"
+                        stroke-dashoffset="${440 - (440 * (440 * (data.score || 0) / 100) / 440)}"
                     ></circle>
                 </svg>
                 <div class="progress-content">
@@ -764,7 +791,7 @@ function renderSectionA() {
                     <h3 class="card-title">推薦按摩動作</h3>
                     <div class="massage-carousel">
                         <div class="massage-carousel-track">
-                            ${data.massages.map((massage, index) => `
+                            ${data.massages.map((massage) => `
                                 <div class="massage-item">
                                     ${renderMassageMedia(massage.gifUrl, massage.name || '按摩示範')}
                                     <div class="massage-info">
@@ -862,7 +889,7 @@ function renderSectionC() {
         <div class="section-c">
             ${suggestions.length > 0 ? `
                 <div class="suggestions-simple-list">
-                    ${suggestions.map((suggestion, index) => `
+                    ${suggestions.map((suggestion) => `
                         <div class="suggestion-simple-item">
                             <div class="suggestion-header">
                                 <span class="suggestion-icon-mini">${getSuggestionIcon(suggestion.type)}</span>
@@ -998,8 +1025,14 @@ function renderProductCard(product) {
 
     const momoUrl = buildMomoUrl(product.brand, product.name);
 
+    // ✅ 建議你後端若有 product.id，可改成 product.productId 或 product.id
+    const product_id = product.productId || product.id || '';
+
     return `
-        <div class="product-card">
+        <div class="product-card"
+             data-product-id="${product_id}"
+             data-product-name="${(product.name || '').replace(/"/g, '&quot;')}"
+             data-product-brand="${(product.brand || '').replace(/"/g, '&quot;')}">
             <div class="product-image">
                 <img
                     src="${product.imageUrl || ''}"
@@ -1125,11 +1158,11 @@ function initBackToTop() {
  * 處理儲存報告
  */
 function handleSaveReport() {
+    // // --- 原本的分享邏輯 (暫不執行，保留供參考) ---
     // if (!isLiffLoggedIn()) {
     //     showToast('請在 LINE 中開啟此頁面', { type: 'warning' });
     //     return;
     // }
-
     // const flexMsg = buildAnalysisFlexMessage(resultData);
     // liff.shareTargetPicker([flexMsg])
     //     .then(() => showToast('分享成功！', { type: 'success' }))
@@ -1137,11 +1170,138 @@ function handleSaveReport() {
     //         console.error('分享失敗:', err);
     //         showToast('分享失敗，請稍後再試', { type: 'error' });
     //     });
+
+    // --- 修改後：直接關閉視窗回到 LINE 對話框 ---
     if (typeof liff !== 'undefined' && liff.isInClient()) {
         liff.closeWindow();
     } else {
         showToast('請在手機 LINE App 中開啟此頁面', { type: 'info' });
     }
+}
+
+// ==================== GA4 / GTM Tracking（新增） ====================
+
+function dlPush(payload) {
+    try {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push(payload);
+    } catch (e) {
+        // 不要讓追蹤影響主流程
+    }
+}
+
+function initGtmTracking() {
+    initDwellTrackingABCD();
+    initProductClickTracking();
+    sendResultRenderedOnce();
+}
+
+function initDwellTrackingABCD() {
+    if (isDwellTrackingActive) return;
+
+    const sections = containerElement?.querySelectorAll?.('.detail-section[data-section]');
+    if (!sections || sections.length === 0) return;
+
+    isDwellTrackingActive = true;
+    dwellTimers = new Map();
+
+    dwellObserver = new IntersectionObserver((entries) => {
+        const now = Date.now();
+
+        entries.forEach((entry) => {
+            const zone = (entry.target.dataset.section || '').toUpperCase();
+            if (!['A', 'B', 'C', 'D'].includes(zone)) return;
+
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                if (!dwellTimers.has(entry.target)) {
+                    dwellTimers.set(entry.target, now);
+                    dlPush({ event: 'zone_view_start', zone });
+                }
+            }
+
+            if (!entry.isIntersecting) {
+                const start = dwellTimers.get(entry.target);
+                if (start) {
+                    dwellTimers.delete(entry.target);
+                    const duration_ms = now - start;
+                    dlPush({ event: 'zone_view_end', zone, duration_ms });
+                }
+            }
+        });
+    }, { threshold: [0, 0.5] });
+
+    sections.forEach(sec => dwellObserver.observe(sec));
+
+    window.addEventListener('pagehide', flushDwellTimersOnce, { once: true });
+}
+
+function flushDwellTimersOnce() {
+    const now = Date.now();
+    try {
+        dwellTimers.forEach((start, el) => {
+            const zone = (el?.dataset?.section || '').toUpperCase();
+            if (!['A', 'B', 'C', 'D'].includes(zone)) return;
+            dlPush({ event: 'zone_view_end', zone, duration_ms: now - start });
+        });
+    } finally {
+        dwellTimers.clear();
+    }
+}
+
+function initProductClickTracking() {
+    if (productClickBound) return;
+
+    const root = containerElement?.querySelector?.('.products-section');
+    if (!root) return;
+
+    productClickBound = true;
+
+    root.addEventListener('click', (evt) => {
+        const link = evt.target.closest('a.btn-link');
+        if (!link) return;
+
+        const card = link.closest('.product-card');
+        if (!card) return;
+
+        const linkType = link.classList.contains('btn-official')
+            ? 'official'
+            : (link.classList.contains('btn-momo') ? 'momo' : 'other');
+
+        const allCards = Array.from(root.querySelectorAll('.product-card'));
+        const rank = allCards.indexOf(card) + 1;
+
+        const product_id = card.getAttribute('data-product-id') || '';
+        const product_name =
+            card.getAttribute('data-product-name') ||
+            (card.querySelector('.product-name')?.textContent || '').trim();
+
+        const product_brand =
+            card.getAttribute('data-product-brand') ||
+            (card.querySelector('.product-brand')?.textContent || '').trim();
+
+        const click_url = link.getAttribute('href') || '';
+
+        dlPush({
+            event: 'product_click',
+            product_id,
+            product_name,
+            product_brand,
+            rank,
+            link_type: linkType,
+            click_url
+        });
+    }, { capture: true });
+}
+
+function sendResultRenderedOnce() {
+    if (sentResultRendered) return;
+    sentResultRendered = true;
+
+    dlPush({
+        event: 'result_rendered',
+        view: currentView,
+        tab: currentTab
+    });
 }
 
 // ==================== 匯出函式 ====================
