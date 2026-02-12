@@ -8,7 +8,7 @@
 export const CONFIG = {
     // ==================== API 設定 ====================
     API: {
-        BASE_URL: 'https://n8n-wmssw56fua-de.a.run.app',
+        BASE_URL: 'https://lumpier-odessa-distinguishingly.ngrok-free.dev',
         ENDPOINTS: {
             ANALYZE: '/webhook/analyze',
             RESULT: '/webhook/result'
